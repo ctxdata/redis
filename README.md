@@ -5,4 +5,4 @@ What is Redis?
 
 Forward to [Original Redis README](./README_redis.md)
 
-This is a fork repository of `Redis` for experiment purpose. I'll add some feature just for fun. :)
+This is a fork repository of `Redis` for experiment purpose. I'll add some features just for fun. :)
