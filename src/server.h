@@ -3288,6 +3288,7 @@ void getrangeCommand(client *c);
 void incrCommand(client *c);
 void decrCommand(client *c);
 void incrbyCommand(client *c);
+void multbyCommand(client *c);
 void decrbyCommand(client *c);
 void incrbyfloatCommand(client *c);
 void selectCommand(client *c);

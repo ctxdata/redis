@@ -589,7 +589,7 @@ void msetnxCommand(client *c) {
     msetGenericCommand(c,1);
 }
 
-void incrDecrCommand(client *c, long long incr) {
+void opCommand(client *c, long long operand, int op) {
     long long value, oldvalue;
     robj *o, *new;
 
@@ -598,12 +598,25 @@ void incrDecrCommand(client *c, long long incr) {
     if (getLongLongFromObjectOrReply(c,o,&value,NULL) != C_OK) return;
 
     oldvalue = value;
-    if ((incr < 0 && oldvalue < 0 && incr < (LLONG_MIN-oldvalue)) ||
-        (incr > 0 && oldvalue > 0 && incr > (LLONG_MAX-oldvalue))) {
-        addReplyError(c,"increment or decrement would overflow");
-        return;
+    if (op == 0) {
+        if ((operand < 0 && oldvalue < 0 && operand < (LLONG_MIN-oldvalue)) ||
+            (operand > 0 && oldvalue > 0 && operand > (LLONG_MAX-oldvalue))) {
+            addReplyError(c,"increment or decrement would overflow");
+            return;
+        }
+        value += operand;
+    } else if (op == 1) {
+        if (operand < 1) {
+            addReplyError(c, "multby operand must be greater than 0");
+            return;
+        } else if (operand >= LLONG_MAX / oldvalue) {
+            addReplyError(c, "multby would overflow");
+            return;
+        } 
+        value *= operand;       
+    } else {
+        addReplyError(c, "invalid operator");
     }
-    value += incr;
 
     if (o && o->refcount == 1 && o->encoding == OBJ_ENCODING_INT &&
         (value < 0 || value >= OBJ_SHARED_INTEGERS) &&
@@ -625,6 +638,10 @@ void incrDecrCommand(client *c, long long incr) {
     addReplyLongLong(c, value);
 }
 
+void incrDecrCommand(client *c, long long incr) {
+    opCommand(c, incr, 0);
+}
+
 void incrCommand(client *c) {
     incrDecrCommand(c,1);
 }
@@ -638,6 +655,13 @@ void incrbyCommand(client *c) {
 
     if (getLongLongFromObjectOrReply(c, c->argv[2], &incr, NULL) != C_OK) return;
     incrDecrCommand(c,incr);
+}
+
+void multbyCommand(client *c) {
+    long long multiplier;
+
+    if (getLongLongFromObjectOrReply(c, c->argv[2], &multiplier, NULL) != C_OK) return;
+    opCommand(c, multiplier, 1);
 }
 
 void decrbyCommand(client *c) {
